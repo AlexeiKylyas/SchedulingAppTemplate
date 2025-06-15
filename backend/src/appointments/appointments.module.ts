@@ -5,6 +5,7 @@ import { AppointmentsService } from './appointments.service';
 import { AppointmentsController } from './appointments.controller';
 import { UsersModule } from '../users/users.module';
 import { ServicesModule } from '../services/services.module';
+import { AppointmentsRepository } from './appointments.repository';
 
 @Module({
   imports: [
@@ -12,8 +13,8 @@ import { ServicesModule } from '../services/services.module';
     UsersModule,
     ServicesModule,
   ],
-  providers: [AppointmentsService],
+  providers: [AppointmentsService, AppointmentsRepository],
   controllers: [AppointmentsController],
-  exports: [AppointmentsService],
+  exports: [AppointmentsService, AppointmentsRepository],
 })
 export class AppointmentsModule {}

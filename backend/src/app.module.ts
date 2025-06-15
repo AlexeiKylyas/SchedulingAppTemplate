@@ -3,6 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { ServicesModule } from './services/services.module';
+import { AppointmentsModule } from './appointments/appointments.module';
 
 @Module({
   imports: [
@@ -11,7 +14,7 @@ import { AppService } from './app.service';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
-    
+
     // Database connection
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -30,6 +33,11 @@ import { AppService } from './app.service';
         logging: configService.get<boolean>('DB_LOGGING', false),
       }),
     }),
+
+    // Feature modules
+    UsersModule,
+    ServicesModule,
+    AppointmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
