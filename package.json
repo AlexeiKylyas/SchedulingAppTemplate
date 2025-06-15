@@ -1,0 +1,44 @@
+{
+  "name": "scheduling-app-template",
+  "version": "0.1.0",
+  "description": "A comprehensive application template for scheduling client appointments",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm run install:backend && npm run install:frontend",
+    "install:backend": "cd backend && npm install",
+    "install:frontend": "cd frontend && npm install",
+    "start:dev": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd backend && npm run start:dev",
+    "start:frontend": "cd frontend && npm run serve",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "db:migration:generate": "cd backend && npm run migration:generate",
+    "db:migration:run": "cd backend && npm run migration:run",
+    "db:migration:revert": "cd backend && npm run migration:revert",
+    "db:start": "npm run docker:up",
+    "db:stop": "npm run docker:down",
+    "test": "npm run test:backend && npm run test:frontend",
+    "test:backend": "cd backend && npm test",
+    "test:frontend": "cd frontend && npm test"
+  },
+  "keywords": [
+    "scheduling",
+    "appointments",
+    "beauty salon",
+    "barbershop",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  }
+}
