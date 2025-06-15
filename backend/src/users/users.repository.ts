@@ -20,12 +20,16 @@ export class UsersRepository extends BaseRepository<User> {
     return this.findOneBy({ email });
   }
 
+  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
+    return this.findOneBy({ phoneNumber });
+  }
+
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Check if user with this email already exists
-    const existingUser = await this.findByEmail(createUserDto.email);
+    // Check if user with this phone number already exists
+    const existingUser = await this.findByPhoneNumber(createUserDto.phoneNumber);
 
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException('User with this phone number already exists');
     }
 
     // Hash the password
@@ -42,7 +46,15 @@ export class UsersRepository extends BaseRepository<User> {
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
-    
+
+    // If updating phone number, check if it's already taken
+    if (updateUserDto.phoneNumber && updateUserDto.phoneNumber !== user.phoneNumber) {
+      const existingUser = await this.findByPhoneNumber(updateUserDto.phoneNumber);
+      if (existingUser) {
+        throw new ConflictException('Phone number is already taken');
+      }
+    }
+
     // If updating email, check if it's already taken
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existingUser = await this.findByEmail(updateUserDto.email);
@@ -50,15 +62,15 @@ export class UsersRepository extends BaseRepository<User> {
         throw new ConflictException('Email is already taken');
       }
     }
-    
+
     // If updating password, hash it
     if (updateUserDto.password) {
       updateUserDto.password = await this.hashPassword(updateUserDto.password);
     }
-    
+
     // Update user
     Object.assign(user, updateUserDto);
-    
+
     return this.usersRepository.save(user);
   }
 
