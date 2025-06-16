@@ -17,8 +17,12 @@ export class AuthController {
     type: JwtResponseDto,
   })
   @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid OTP code',
+  })
+  @ApiResponse({
     status: HttpStatus.CONFLICT,
-    description: 'User with this email already exists',
+    description: 'User with this phone number already exists',
   })
   async register(@Body() registerDto: RegisterDto): Promise<JwtResponseDto> {
     return this.authService.register(registerDto);

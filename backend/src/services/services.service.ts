@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Service } from './service.entity';
-import { CreateServiceDto } from './dto/create-service.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
-import { PaginationDto, PaginatedResponseDto } from '../common/pagination.dto';
+import { CreateServiceDto, UpdateServiceDto } from './dto';
+import { PaginationDto, PaginatedResponseDto } from '../common';
 import { ServicesRepository } from './services.repository';
 
 @Injectable()

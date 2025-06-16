@@ -27,8 +27,13 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<JwtResponseDto> {
+    if (registerDto.otpCode !== '1111') {
+      throw new BadRequestException('Invalid OTP code');
+    }
+
+    const { otpCode, ...userData } = registerDto;
     const user = await this.usersService.create({
-      ...registerDto,
+      ...userData,
       role: UserRole.CLIENT,
     });
 

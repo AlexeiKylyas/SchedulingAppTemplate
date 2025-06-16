@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
+import { IsNotEmpty, IsString, Matches, MinLength, Length } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ description: 'User first name' })
@@ -23,4 +23,10 @@ export class RegisterDto {
   @IsNotEmpty()
   @MinLength(8)
   password: string;
+
+  @ApiProperty({ description: 'OTP code received via SMS', example: '1111' })
+  @IsString()
+  @IsNotEmpty()
+  @Length(4, 4, { message: 'OTP code must be exactly 4 characters' })
+  otpCode: string;
 }
