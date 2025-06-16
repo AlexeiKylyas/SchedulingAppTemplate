@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Appointment, AppointmentStatus } from './appointment.entity';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
-import { UpdateAppointmentDto } from './dto/update-appointment.dto';
-import { PaginationDto, PaginatedResponseDto } from '../common/pagination.dto';
+import { CreateAppointmentDto, UpdateAppointmentDto } from './dto';
+import { PaginationDto, PaginatedResponseDto } from '../common';
 import { UsersService } from '../users/users.service';
 import { ServicesService } from '../services/services.service';
 import { AppointmentsRepository } from './appointments.repository';
