@@ -2,25 +2,25 @@ import { Injectable } from '@nestjs/common';
 import { Appointment, AppointmentStatus } from './appointment.entity';
 import { CreateAppointmentDto, UpdateAppointmentDto } from './dto';
 import { PaginationDto, PaginatedResponseDto } from '../common';
-import { UsersService } from '../users/users.service';
 import { ServicesService } from '../services/services.service';
 import { AppointmentsRepository } from './appointments.repository';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     private appointmentsRepository: AppointmentsRepository,
-    private usersService: UsersService,
+    private usersRepository: UsersRepository,
     private servicesService: ServicesService,
   ) {}
 
   async create(createAppointmentDto: CreateAppointmentDto): Promise<Appointment> {
     // Validate client exists
-    const client = await this.usersService.findOne(createAppointmentDto.clientId);
+    const client = await this.usersRepository.findOne(createAppointmentDto.clientId);
 
     // Validate staff exists if provided
     if (createAppointmentDto.staffId) {
-      await this.usersService.findOne(createAppointmentDto.staffId);
+      await this.usersRepository.findOne(createAppointmentDto.staffId);
     }
 
     // Validate service exists and get duration
@@ -56,7 +56,7 @@ export class AppointmentsService {
 
     // If updating staff, validate staff exists
     if (updateAppointmentDto.staffId && updateAppointmentDto.staffId !== appointment.staffId) {
-      await this.usersService.findOne(updateAppointmentDto.staffId);
+      await this.usersRepository.findOne(updateAppointmentDto.staffId);
     }
 
     // If updating service, validate service exists and recalculate end time

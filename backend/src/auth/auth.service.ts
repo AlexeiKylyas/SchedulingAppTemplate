@@ -78,7 +78,7 @@ export class AuthService {
     try {
       const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
 
-      const user = await this.usersService.findOne(payload.sub);
+      const user = await this.usersRepository.findOne(payload.sub);
 
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
