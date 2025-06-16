@@ -12,7 +12,7 @@ export enum UserRole {
 @Entity('users')
 export class User extends BaseEntity {
   @ApiProperty({ description: 'User email address' })
-  @Column({ unique: true })
+  @Column({ nullable: true })
   email: string;
 
   @ApiProperty({ description: 'User first name' })
@@ -24,7 +24,7 @@ export class User extends BaseEntity {
   lastName: string;
 
   @ApiProperty({ description: 'User phone number' })
-  @Column({ nullable: true })
+  @Column({ unique: true })
   phoneNumber: string;
 
   @Exclude()

@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 import { UserRole } from '../user.entity';
 
 export class UpdateUserDto {
@@ -18,9 +18,10 @@ export class UpdateUserDto {
   @IsOptional()
   lastName?: string;
 
-  @ApiProperty({ description: 'User phone number', required: false })
+  @ApiProperty({ description: 'User phone number', required: false, example: '+380636289907' })
   @IsString()
   @IsOptional()
+  @Matches(/^\+380\d{9}$/, { message: 'Phone number must be in format +380XXXXXXXXX' })
   phoneNumber?: string;
 
   @ApiProperty({ description: 'User password', required: false })
