@@ -1,29 +1,24 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
-import { JwtResponseDto } from './dto/jwt-response.dto';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { UserRole } from '../users/user.entity';
+import { RegisterDto, LoginDto, JwtResponseDto, RefreshTokenDto, OtpRequestDto, OtpResponseDto } from './dto';
+import {User, UserRole} from '../users/user.entity';
+import { UsersRepository } from '../users/users.repository';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private usersRepository: UsersRepository,
   ) {}
 
   private generateTokens(user: any) {
     const payload = { phoneNumber: user.phoneNumber, sub: user.id, role: user.role };
 
-    // Generate access token with default expiration (from config)
     const accessToken = this.jwtService.sign(payload);
 
-    // Generate refresh token with 30 days expiration
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: '30d',
     });
@@ -32,8 +27,13 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<JwtResponseDto> {
+    if (registerDto.otpCode !== '1111') {
+      throw new BadRequestException('Invalid OTP code');
+    }
+
+    const { otpCode, ...userData } = registerDto;
     const user = await this.usersService.create({
-      ...registerDto,
+      ...userData,
       role: UserRole.CLIENT,
     });
 
@@ -50,7 +50,7 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<JwtResponseDto> {
-    const user = await this.usersService.findByPhoneNumber(loginDto.phoneNumber);
+    const user: User = await this.usersRepository.findOneBy({ phoneNumber: loginDto.phoneNumber });
 
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
@@ -76,17 +76,14 @@ export class AuthService {
 
   async refreshTokens(refreshTokenDto: RefreshTokenDto): Promise<JwtResponseDto> {
     try {
-      // Verify the refresh token
       const payload = this.jwtService.verify(refreshTokenDto.refreshToken);
 
-      // Get the user from the database
-      const user = await this.usersService.findOne(payload.sub);
+      const user = await this.usersRepository.findOne(payload.sub);
 
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Generate new tokens
       const { accessToken, refreshToken } = this.generateTokens(user);
 
       return {
@@ -100,5 +97,20 @@ export class AuthService {
     } catch (error) {
       throw new BadRequestException('Invalid refresh token');
     }
+  }
+
+  async generateOtp(otpRequestDto: OtpRequestDto): Promise<OtpResponseDto> {
+    const user = await this.usersRepository.findOneBy({ phoneNumber: otpRequestDto.phoneNumber });
+
+    if (user) {
+      throw new ConflictException('User with this phone number already exists');
+    }
+
+    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+    return {
+      otpCode,
+      phoneNumber: otpRequestDto.phoneNumber,
+    };
   }
 }

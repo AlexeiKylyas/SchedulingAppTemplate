@@ -25,10 +25,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from './user.entity';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { UserResponseDto } from './dto/user-response.dto';
-import { PaginationDto, PaginatedResponseDto } from '../common/pagination.dto';
+import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto';
+import { PaginationDto, PaginatedResponseDto } from '../common';
 import { User } from './user.entity';
 
 @ApiTags('users')

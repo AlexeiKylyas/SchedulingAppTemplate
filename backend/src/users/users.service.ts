@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { User } from './user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { PaginationDto, PaginatedResponseDto } from '../common/pagination.dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
+import { PaginationDto, PaginatedResponseDto } from '../common';
 import { UsersRepository } from './users.repository';
 
 @Injectable()
@@ -23,13 +22,6 @@ export class UsersService {
     return this.usersRepository.findOne(id);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findByEmail(email);
-  }
-
-  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    return this.usersRepository.findByPhoneNumber(phoneNumber);
-  }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     return this.usersRepository.update(id, updateUserDto);

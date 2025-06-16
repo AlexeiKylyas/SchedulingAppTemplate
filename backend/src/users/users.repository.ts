@@ -4,8 +4,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './user.entity';
 import { BaseRepository } from '../common/base.repository';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto, UpdateUserDto } from './dto';
 
 @Injectable()
 export class UsersRepository extends BaseRepository<User> {
@@ -16,17 +15,10 @@ export class UsersRepository extends BaseRepository<User> {
     super(usersRepository);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.findOneBy({ email });
-  }
-
-  async findByPhoneNumber(phoneNumber: string): Promise<User | null> {
-    return this.findOneBy({ phoneNumber });
-  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Check if user with this phone number already exists
-    const existingUser = await this.findByPhoneNumber(createUserDto.phoneNumber);
+    const existingUser = await this.findOneBy({ phoneNumber: createUserDto.phoneNumber });
 
     if (existingUser) {
       throw new ConflictException('User with this phone number already exists');
@@ -49,7 +41,7 @@ export class UsersRepository extends BaseRepository<User> {
 
     // If updating phone number, check if it's already taken
     if (updateUserDto.phoneNumber && updateUserDto.phoneNumber !== user.phoneNumber) {
-      const existingUser = await this.findByPhoneNumber(updateUserDto.phoneNumber);
+      const existingUser = await this.findOneBy({ phoneNumber: updateUserDto.phoneNumber });
       if (existingUser) {
         throw new ConflictException('Phone number is already taken');
       }
@@ -57,7 +49,7 @@ export class UsersRepository extends BaseRepository<User> {
 
     // If updating email, check if it's already taken
     if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existingUser = await this.findByEmail(updateUserDto.email);
+      const existingUser = await this.findOneBy({ email: updateUserDto.email });
       if (existingUser) {
         throw new ConflictException('Email is already taken');
       }
