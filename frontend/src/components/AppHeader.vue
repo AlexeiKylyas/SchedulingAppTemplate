@@ -9,10 +9,11 @@
       </button>
       <nav class="main-nav" :class="{ 'active': isMenuOpen }">
         <ul>
-          <li><a href="#">Home</a></li>
+          <li><router-link to="/">Home</router-link></li>
           <li><a href="#">Services</a></li>
           <li><a href="#">About</a></li>
           <li><a href="#">Contact</a></li>
+          <li><router-link to="/login" class="login-button">Login</router-link></li>
         </ul>
       </nav>
     </div>
