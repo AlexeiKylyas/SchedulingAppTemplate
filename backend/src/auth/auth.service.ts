@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { RegisterDto, LoginDto, JwtResponseDto, RefreshTokenDto, OtpRequestDto, OtpResponseDto } from './dto';
+import { RegisterDto, LoginDto, JwtResponseDto, RefreshTokenDto } from './dto';
 import {User, UserRole} from '../users/user.entity';
 import { UsersRepository } from '../users/users.repository';
 import { OtpRepository } from '../otp/repositories/otp.repository';
@@ -109,24 +109,4 @@ export class AuthService {
     }
   }
 
-  async generateOtp(otpRequestDto: OtpRequestDto): Promise<OtpResponseDto> {
-    const user = await this.usersRepository.findOneBy({ phoneNumber: otpRequestDto.phoneNumber });
-
-    if (user) {
-      throw new ConflictException('User with this phone number already exists');
-    }
-
-    // Generate a random 4-digit OTP code
-    const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
-
-    // Store OTP in database with 5-minute expiration
-    await this.otpRepository.createOtp(otpRequestDto.phoneNumber, otpCode, 5);
-
-    // In a real application, you would send the OTP via SMS here
-    // For development purposes, we'll return the OTP in the response
-    return {
-      otpCode,
-      phoneNumber: otpRequestDto.phoneNumber,
-    };
-  }
 }

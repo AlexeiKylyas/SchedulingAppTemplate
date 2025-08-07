@@ -1,7 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshTokenDto, JwtResponseDto, OtpRequestDto, OtpResponseDto } from './dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, JwtResponseDto } from './dto';
 
 @ApiTags('auth')
 @ApiBearerAuth('JWT-auth')
@@ -60,19 +60,4 @@ export class AuthController {
     return this.authService.refreshTokens(refreshTokenDto);
   }
 
-  @Post('generate-otp')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Generate OTP code for phone number' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'OTP code has been successfully generated',
-    type: OtpResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.CONFLICT,
-    description: 'User with this phone number already exists',
-  })
-  async generateOtp(@Body() otpRequestDto: OtpRequestDto): Promise<OtpResponseDto> {
-    return this.authService.generateOtp(otpRequestDto);
-  }
 }

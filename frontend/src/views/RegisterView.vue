@@ -140,7 +140,7 @@ export default {
       this.loading = true;
 
       try {
-        const response = await fetch('http://localhost:3000/auth/generate-otp', {
+        const response = await fetch('http://localhost:3000/otp/generate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -156,7 +156,6 @@ export default {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
           } catch (parseError) {
-            // If response is not JSON, use status text or a generic message
             errorMessage = response.statusText || errorMessage;
             console.error('Error parsing response:', parseError);
           }
@@ -164,13 +163,8 @@ export default {
         }
 
         const data = await response.json();
-        console.log('OTP generated:', data);
+        console.log('OTP requested for:', data.phoneNumber);
 
-        // In a real application, the OTP would be sent to the user's phone
-        // For development purposes, we'll pre-fill the OTP field with the code from the response
-        this.otpCode = data.otpCode;
-
-        // Show the popup instead of moving to step 2
         this.showPopup = true;
       } catch (error) {
         console.error('Error requesting OTP:', error);
@@ -183,8 +177,7 @@ export default {
     handleVerify(code) {
       this.otpCode = code;
       this.showPopup = false;
-      // Move to step 2 to complete registration
-      this.step = 2;
+      this.register();
     },
 
     handleCancel() {
@@ -205,7 +198,6 @@ export default {
           body: JSON.stringify({
             firstName: this.firstName,
             lastName: this.lastName,
-            email: this.email,
             phoneNumber: this.phoneNumber,
             password: this.password,
             otpCode: this.otpCode
@@ -218,7 +210,6 @@ export default {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
           } catch (parseError) {
-            // If response is not JSON, use status text or a generic message
             errorMessage = response.statusText || errorMessage;
             console.error('Error parsing response:', parseError);
           }
