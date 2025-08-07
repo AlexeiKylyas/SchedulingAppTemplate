@@ -4,14 +4,16 @@
       <h2>Login to Your Account</h2>
       <form @submit.prevent="login" class="login-form">
         <div class="form-group">
-          <label for="email">Email</label>
+          <label for="email">Phone Number</label>
           <input 
-            type="email" 
+            type="tel" 
             id="email" 
             v-model="email" 
             required 
-            placeholder="Enter your email"
+            placeholder="+380XXXXXXXXX"
+            pattern="^\+380\d{9}$"
           >
+          <small>Format: +380XXXXXXXXX</small>
         </div>
         <div class="form-group">
           <label for="password">Password</label>
@@ -23,8 +25,14 @@
             placeholder="Enter your password"
           >
         </div>
-        <button type="submit" class="btn-login">Login</button>
+        <button type="submit" class="btn-login" :disabled="loading">
+          Login
+          <span v-if="loading" class="loading-indicator"></span>
+        </button>
       </form>
+      <div v-if="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
       <div class="additional-options">
         <router-link to="/forgot-password" class="forgot-password">Forgot Password?</router-link>
         <router-link to="/register" class="create-account">Create New Account</router-link>
@@ -39,15 +47,60 @@ export default {
   data() {
     return {
       email: '',
-      password: ''
+      password: '',
+      errorMessage: '',
+      loading: false
     }
   },
   methods: {
-    login() {
-      // Here you would typically call an API to authenticate the user
-      console.log('Login attempt with:', this.email, this.password)
-      // For now, we'll just log the attempt
-      // In a real application, you would call your authentication service
+    async login() {
+      this.errorMessage = '';
+      this.loading = true;
+
+      try {
+        const response = await fetch('http://localhost:3000/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phoneNumber: this.email, // Using email field for phone number
+            password: this.password
+          })
+        });
+
+        if (!response.ok) {
+          let errorMessage = 'Login failed';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = response.statusText || errorMessage;
+            console.error('Error parsing response:', parseError);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        console.log('Login successful:', data);
+
+        // Store the JWT tokens in localStorage
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('userId', data.userId);
+
+        // Trigger storage event for AppHeader to detect login
+        window.dispatchEvent(new Event('storage'));
+
+        // Redirect to home page or cabinet
+        this.$router.push('/cabinet');
+
+      } catch (error) {
+        console.error('Error during login:', error);
+        this.errorMessage = error.message || 'Login failed. Please try again.';
+      } finally {
+        this.loading = false;
+      }
     }
   }
 }
@@ -101,6 +154,11 @@ input {
   font-size: 16px;
 }
 
+small {
+  color: #777;
+  font-size: 12px;
+}
+
 .btn-login {
   background-color: #4CAF50;
   color: white;
@@ -111,10 +169,40 @@ input {
   font-size: 16px;
   font-weight: 600;
   margin-top: 8px;
+  position: relative;
 }
 
 .btn-login:hover {
   background-color: #45a049;
+}
+
+.btn-login:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  display: inline-block;
+  margin-left: 8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #f44336;
+  margin-top: 16px;
+  padding: 8px;
+  background-color: #ffebee;
+  border-radius: 4px;
+  text-align: center;
 }
 
 .additional-options {
