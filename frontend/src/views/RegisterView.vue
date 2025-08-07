@@ -131,7 +131,7 @@ export default {
              this.lastName.trim() !== '' && 
              this.email.trim() !== '' && 
              this.phoneNumber.trim() !== '' && 
-             this.password.trim() !== '';
+             this.password.trim().length >= 8;
     }
   },
   methods: {
