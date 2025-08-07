@@ -5,6 +5,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto, LoginDto, JwtResponseDto, RefreshTokenDto, OtpRequestDto, OtpResponseDto } from './dto';
 import {User, UserRole} from '../users/user.entity';
 import { UsersRepository } from '../users/users.repository';
+import { OtpRepository } from '../otp/repositories/otp.repository';
 
 @Injectable()
 export class AuthService {
@@ -12,6 +13,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private usersRepository: UsersRepository,
+    private otpRepository: OtpRepository,
   ) {}
 
   private generateTokens(user: any) {
@@ -27,12 +29,20 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto): Promise<JwtResponseDto> {
-    if (registerDto.otpCode !== '1111') {
-      throw new BadRequestException('Invalid OTP code');
+    const { otpCode, phoneNumber, ...userData } = registerDto;
+
+    // Validate OTP code
+    const otp = await this.otpRepository.findValidOtp(phoneNumber, otpCode);
+    if (!otp) {
+      throw new BadRequestException('Invalid or expired OTP code');
     }
 
-    const { otpCode, ...userData } = registerDto;
+    // Mark OTP as used
+    await this.otpRepository.markAsUsed(otp.id);
+
+    // Create user
     const user = await this.usersService.create({
+      phoneNumber,
       ...userData,
       role: UserRole.CLIENT,
     });
@@ -106,8 +116,14 @@ export class AuthService {
       throw new ConflictException('User with this phone number already exists');
     }
 
+    // Generate a random 4-digit OTP code
     const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
 
+    // Store OTP in database with 5-minute expiration
+    await this.otpRepository.createOtp(otpRequestDto.phoneNumber, otpCode, 5);
+
+    // In a real application, you would send the OTP via SMS here
+    // For development purposes, we'll return the OTP in the response
     return {
       otpCode,
       phoneNumber: otpRequestDto.phoneNumber,

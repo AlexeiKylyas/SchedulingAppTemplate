@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { ServicesModule } from './services/services.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { AuthModule } from './auth/auth.module';
+import { OtpModule } from './otp/otp.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AuthModule } from './auth/auth.module';
     ServicesModule,
     AppointmentsModule,
     AuthModule,
+    OtpModule,
   ],
   controllers: [AppController],
   providers: [AppService],
