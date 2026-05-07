@@ -1,0 +1,42 @@
+name: '[SchedulingAppTemplate] Claude Code Review'
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+env:
+  REPO_BANNER: 'SchedulingAppTemplate — a NestJS REST API + Vue 3 SPA test polygon'
+  REVIEWER_MODEL: 'claude-sonnet-4-6'
+  CORPUS_PATH: '.github/claude-review-corpus.jsonl'
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install runner deps
+        working-directory: .github/scripts
+        run: npm ci
+      - name: Run review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO_BANNER: ${{ env.REPO_BANNER }}
+          REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
+          CORPUS_PATH: ${{ env.CORPUS_PATH }}
+        run: node .github/scripts/run-review.mjs > /tmp/review.md
+      - name: Post summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr comment ${{ github.event.pull_request.number }} -F /tmp/review.md
