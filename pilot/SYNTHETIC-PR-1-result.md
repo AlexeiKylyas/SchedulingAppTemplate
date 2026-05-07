@@ -35,16 +35,16 @@
 
 **Setup:** Push a fix commit that replaces the silent `??` fallback with an allowlist + throw.
 
-**Results:** _(to be filled after second GHA run)_
+**Results:** ✅ PASS
 
-- [ ] New bot comment posted (does not edit prior)
-- [ ] GHA stderr shows "prior bot reviews: 1"
-- [ ] New comment acknowledges Pattern 1 was fixed
-- [ ] Patterns 5 and 6 still flagged
+- [x] New bot comment posted (does not edit prior — comment #2 is a new post)
+- [x] GHA stderr: `[run-review] prior bot comments: 1`
+- [x] New comment explicitly acknowledges Pattern 1 fixed: "Pattern 1 resolved — ✅ Fixed since last review" section present
+- [x] Patterns 5 and 6 still flagged as "🔴 Always-on violation (persists from prior review)"
 
-**Bot comment URL:** _pending_
+**Bot comment URL:** https://github.com/AlexeiKylyas/SchedulingAppTemplate/pull/4#issuecomment-4399318748
 
-**GHA run URL:** _pending_
+**GHA run URL:** https://github.com/AlexeiKylyas/SchedulingAppTemplate/actions/runs/25510680678
 
 ---
 

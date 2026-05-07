@@ -39,4 +39,18 @@ function resolveEnv(env: string = 'production'): string {
   return (process.env as Record<string, string>)[env] ?? 'fallback-value';
 }
 
+// ─── Test 3: breaking API change (triggers context-priority agentic search) ───
+// Rule (context-priority): "Document breaking API changes in CHANGELOG"
+// A previously optional `limit` param is now required — breaking change, no CHANGELOG entry
+
+interface Appointment {
+  id: string;
+  date: string;
+}
+
+// BREAKING CHANGE: `limit` was previously optional; now required without CHANGELOG update
+export async function getAppointments(userId: string, limit: number): Promise<Appointment[]> {
+  return [];
+}
+
 export { send, resolveEnv };
