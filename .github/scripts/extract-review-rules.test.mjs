@@ -192,3 +192,29 @@ test('extractRules: throws when signal already aborted', async () => {
     /aborted|timeout/i,
   );
 });
+
+test('extractRules: parses rules when response is wrapped in ```json code fences', async () => {
+  const fenced = '```json\n' + JSON.stringify({ rules: [BASE_RULE] }) + '\n```';
+  const anthropic = mockAnthropic(fenced);
+  const result = await extractRules({
+    anthropic,
+    prompt: 'test',
+    model: 'test-model',
+    signal: new AbortController().signal,
+  });
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].rule_title, BASE_RULE.rule_title);
+});
+
+test('extractRules: parses rules when response is wrapped in plain ``` code fences', async () => {
+  const fenced = '```\n' + JSON.stringify({ rules: [BASE_RULE] }) + '\n```';
+  const anthropic = mockAnthropic(fenced);
+  const result = await extractRules({
+    anthropic,
+    prompt: 'test',
+    model: 'test-model',
+    signal: new AbortController().signal,
+  });
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].rule_title, BASE_RULE.rule_title);
+});
