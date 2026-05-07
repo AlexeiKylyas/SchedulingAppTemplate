@@ -1,9 +1,12 @@
 import { Resolver, Query, Args } from '@nestjs/graphql';
-import { SlotRepository } from '../infrastructure/slot.repository';
+import { z } from 'zod';
+import { GetAvailableSlotsUsecase } from '../application/get-available-slots.usecase';
+
+const DateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'date must be YYYY-MM-DD');
 
 @Resolver()
 export class SlotResolver {
-  constructor(private readonly slotRepository: SlotRepository) {}
+  constructor(private readonly getAvailableSlots: GetAvailableSlotsUsecase) {}
 
   @Query(() => [String])
   async availableSlots(
@@ -11,8 +14,7 @@ export class SlotResolver {
     @Args('date') date: string,
     @Args('staffId') staffID: string,
   ) {
-    // Direct DB access in resolver — no validation on external inputs
-    const slots = await this.slotRepository.findAvailable(serviceID, date, staffID);
-    return slots.map(s => s.id);
+    DateSchema.parse(date);
+    return this.getAvailableSlots.execute({ serviceID, date, staffID });
   }
 }
