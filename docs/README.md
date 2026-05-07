@@ -14,6 +14,7 @@ Monorepo template for a client-appointment scheduling application (beauty salons
 - [dependencies.md](dependencies.md) — first/third-party packages, runtime deps
 - [risks.md](risks.md) — known gaps, security notes, unknowns
 - [ai-agents-guide.md](ai-agents-guide.md) — guidance for AI agents working in this repo
+- [ai-review-corpus.md](ai-review-corpus.md) — how the AI corpus review pipeline works and how to manage it
 
 ## Quick Facts
 
