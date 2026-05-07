@@ -1,0 +1,70 @@
+name: '[SchedulingAppTemplate] Extract Review Rules'
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+env:
+  CORPUS_PATH: '.github/claude-review-corpus.jsonl'
+  EXTRACTOR_MODEL: 'claude-sonnet-4-6'
+
+jobs:
+  extract-rules:
+    runs-on: ubuntu-latest
+    # Two independent guards — both are required:
+    #
+    # 1. `merged == true`: only run on actual merges, not on PR closes without merge.
+    #    Without this the job would fire on every closed PR (e.g. "Close without merging").
+    #
+    # 2. `actor != 'github-actions[bot]'`: prevents this workflow from re-firing when the
+    #    bot itself pushes the corpus-update commit (which may trigger a pull_request:closed
+    #    event on short-lived branches). Note: the commit step (sub-epic 3.4) also adds
+    #    [skip ci] to the commit message, which guards push-triggered workflows — but that
+    #    guard does not cover pull_request events, so this actor check fills that gap.
+    #    Both guards protect different scenarios; do not remove either thinking it is redundant.
+    if: github.event.pull_request.merged == true && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write      # required to commit corpus update back to main
+      pull-requests: read  # required to fetch PR comments and reviews
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install runner deps
+        working-directory: .github/scripts
+        run: npm ci
+      - name: Extract candidate rules
+        id: extract
+        working-directory: .github/scripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          CORPUS_PATH: ${{ env.CORPUS_PATH }}
+          EXTRACTOR_MODEL: ${{ env.EXTRACTOR_MODEL }}
+        run: |
+          node extract-review-rules.mjs --pr ${{ github.event.pull_request.number }} \
+            | node sanitize-and-dedup.mjs --corpus ../claude-review-corpus.jsonl \
+            > /tmp/new-rules.jsonl
+          if [ -s /tmp/new-rules.jsonl ]; then
+            echo "has_new_rules=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Append + commit + push
+        if: steps.extract.outputs.has_new_rules == 'true'
+        run: |
+          cat /tmp/new-rules.jsonl >> ${{ env.CORPUS_PATH }}
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ${{ env.CORPUS_PATH }}
+          # [skip ci] prevents push-triggered workflows from re-firing on this bot commit.
+          # The actor guard in the job-level `if:` covers pull_request events separately.
+          # Both guards protect different scenarios — do not remove either.
+          git commit -m "chore(corpus): rules from PR #${{ github.event.pull_request.number }} [skip ci]"
+          for i in 1 2; do
+            git pull --rebase origin main && git push && break
+            sleep $((i * 2))
+          done
