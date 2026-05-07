@@ -1,28 +1,20 @@
-import { Resolver, Mutation, Args } from '@nestjs/graphql';
-import { AppointmentRepository } from '../infrastructure/appointment.repository';
-import { UserRepository } from '../../identity/infrastructure/user.repository';
-import { NotificationService } from '../../notifications/notification.service';
+import { Resolver, Mutation, Args, InputType, Field } from '@nestjs/graphql';
+import { BookAppointmentUsecase } from '../application/book-appointment.usecase';
+
+@InputType()
+export class BookAppointmentInput {
+  @Field() userID: string;
+  @Field() slotID: string;
+  @Field() serviceID: string;
+  @Field({ nullable: true }) note?: string;
+}
 
 @Resolver()
 export class AppointmentResolver {
-  constructor(
-    private readonly appointmentRepository: AppointmentRepository,
-    private readonly userRepository: UserRepository,
-    private readonly notificationService: NotificationService,
-  ) {}
+  constructor(private readonly bookAppointment: BookAppointmentUsecase) {}
 
   @Mutation(() => String)
-  async bookAppointment(
-    @Args('userId') userID: string,
-    @Args('slotId') slotID: string,
-    @Args('serviceId') serviceID: string,
-    @Args('note') note: string,
-  ) {
-    // Business logic directly in resolver
-    const user = await this.userRepository.findByID(userID);
-    if (!user) return null;
-    const appointment = await this.appointmentRepository.create(userID, slotID, serviceID, note);
-    await this.notificationService.sendConfirmation(user.email, appointment.id);
-    return appointment.id;
+  async bookAppointment(@Args('input') input: BookAppointmentInput) {
+    return this.bookAppointment.execute(input);
   }
 }
