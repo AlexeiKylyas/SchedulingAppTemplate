@@ -48,7 +48,7 @@ jobs:
           EXTRACTOR_MODEL: ${{ env.EXTRACTOR_MODEL }}
         run: |
           node extract-review-rules.mjs --pr ${{ github.event.pull_request.number }} \
-            | node sanitize-and-dedup.mjs --corpus ../${{ env.CORPUS_PATH }} \
+            | node sanitize-and-dedup.mjs --corpus ../claude-review-corpus.jsonl \
             > /tmp/new-rules.jsonl
           if [ -s /tmp/new-rules.jsonl ]; then
             echo "has_new_rules=true" >> "$GITHUB_OUTPUT"
