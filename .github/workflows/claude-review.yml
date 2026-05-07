@@ -9,10 +9,12 @@ env:
   REPO_BANNER: 'SchedulingAppTemplate — a NestJS REST API + Vue 3 SPA test polygon'
   REVIEWER_MODEL: 'claude-sonnet-4-6'
   CORPUS_PATH: '.github/claude-review-corpus.jsonl'
+  CORPUS_TOP_N: '8'
 
 jobs:
   claude-review:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event.pull_request.draft == false
     permissions:
       contents: read
@@ -35,6 +37,7 @@ jobs:
           REPO_BANNER: ${{ env.REPO_BANNER }}
           REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
           CORPUS_PATH: ${{ env.CORPUS_PATH }}
+          CORPUS_TOP_N: ${{ env.CORPUS_TOP_N }}
           RUN_REVIEW_LOG_LEVEL: info
         run: node .github/scripts/run-review.mjs > /tmp/review.md
       - name: Triage on failure
