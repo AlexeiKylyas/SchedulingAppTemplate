@@ -1,16 +1,17 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
-import { UserRepository } from '../infrastructure/user.repository';
+import { FindUserUsecase } from '../application/find-user.usecase';
+import { UpdateUserProfileUsecase } from '../application/update-user-profile.usecase';
 
 @Resolver()
 export class UserResolver {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(
+    private readonly findUser: FindUserUsecase,
+    private readonly updateUserProfile: UpdateUserProfileUsecase,
+  ) {}
 
   @Query(() => String)
   async getUser(@Args('id') userID: string) {
-    // Direct DB access in resolver — bypasses use case layer
-    const user = await this.userRepository.findByID(userID);
-    if (!user) return null;
-    return user;
+    return this.findUser.execute(userID);
   }
 
   @Mutation(() => String)
@@ -19,10 +20,6 @@ export class UserResolver {
     @Args('name') name: string,
     @Args('email') email: string,
   ) {
-    // Business logic in resolver — should delegate to use case
-    const user = await this.userRepository.findByID(userID);
-    if (!user) return null;
-    const updated = user.withName(name).withEmail(email);
-    return this.userRepository.save(updated);
+    return this.updateUserProfile.execute({ userID, name, email });
   }
 }
