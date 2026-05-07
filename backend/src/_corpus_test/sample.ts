@@ -2,11 +2,20 @@
 // This file is excluded from backend/tsconfig.json compilation.
 // DO NOT import or use in production code.
 
-// ─── Pattern 1 (silent-fallback, always-on) ──────────────────────────────────
+// ─── Pattern 1 (FIXED) ───────────────────────────────────────────────────────
 // Rule: "Fail loud on invalid values — replace ?? fallback with allowlist + throw"
-// Anti-pattern: silent ?? fallback on a required env value
+// Fix: explicit allowlist + throw replaces silent ?? fallback
 
-const channel = process.env.NOTIFICATION_CHANNEL ?? 'main';
+const ALLOWED_CHANNELS = ['main', 'alerts', 'deploys'] as const;
+type Channel = typeof ALLOWED_CHANNELS[number];
+
+const rawChannel = process.env.NOTIFICATION_CHANNEL;
+if (!rawChannel || !(ALLOWED_CHANNELS as readonly string[]).includes(rawChannel)) {
+  throw new Error(
+    `Invalid or missing NOTIFICATION_CHANNEL: "${rawChannel}". Must be one of: ${ALLOWED_CHANNELS.join(', ')}.`,
+  );
+}
+const channel = rawChannel as Channel;
 console.log('Sending to', channel);
 
 // ─── Pattern 5 (3+ args, always-on) ──────────────────────────────────────────

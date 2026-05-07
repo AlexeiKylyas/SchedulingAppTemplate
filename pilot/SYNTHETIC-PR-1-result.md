@@ -14,16 +14,20 @@
   - Pattern 6 (single-fallback-layer): `resolveEnv(env = 'production')` with downstream `??`
 - `backend/tsconfig.json` updated to exclude `src/_corpus_test`
 
-**Results:** _(to be filled after GHA run)_
+**Results:** ✅ PASS
 
-- [ ] Bot summary comment posted
-- [ ] ≥2 always-on rules cited by title or rationale
-- [ ] GHA stderr shows "always-on rules loaded" count
-- [ ] `search_corpus` tool_use count in GHA log
+- [x] Bot summary comment posted
+- [x] All 3 always-on rules cited by exact rule title:
+  - "Fail loud on invalid values — replace ?? fallback with allowlist + throw"
+  - "Use object args for 3+ parameters — never positional lists"
+  - "One fallback layer only — avoid default params masking a downstream ?? chain"
+- [x] GHA stderr: `[run-review] always-on: 7, context: 0`
+- [x] GHA stderr: `[run-review] prior bot comments: 0`
+- [x] `search_corpus` calls: 0 (bot confirms "No additional corpus rules surfaced beyond the always-on set")
 
-**Bot comment URL:** _pending_
+**Bot comment URL:** https://github.com/AlexeiKylyas/SchedulingAppTemplate/pull/4#issuecomment-4399298980
 
-**GHA run URL:** _pending_
+**GHA run URL:** https://github.com/AlexeiKylyas/SchedulingAppTemplate/actions/runs/25510609825
 
 ---
 
