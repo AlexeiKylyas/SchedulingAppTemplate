@@ -35,8 +35,19 @@ jobs:
           REPO_BANNER: ${{ env.REPO_BANNER }}
           REVIEWER_MODEL: ${{ env.REVIEWER_MODEL }}
           CORPUS_PATH: ${{ env.CORPUS_PATH }}
+          RUN_REVIEW_LOG_LEVEL: info
         run: node .github/scripts/run-review.mjs > /tmp/review.md
+      - name: Triage on failure
+        if: failure()
+        run: |
+          echo "=== /tmp/review.md preview (first 200 chars) ==="
+          head -c 200 /tmp/review.md 2>/dev/null || echo "(file not found or empty)"
       - name: Post summary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr comment ${{ github.event.pull_request.number }} -F /tmp/review.md
+        run: |
+          if [ ! -s /tmp/review.md ]; then
+            echo "::warning::run-review.mjs produced empty output — skipping comment post"
+            exit 0
+          fi
+          gh pr comment ${{ github.event.pull_request.number }} -F /tmp/review.md
