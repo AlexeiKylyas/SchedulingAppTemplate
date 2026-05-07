@@ -63,6 +63,17 @@ test('parseCorpus: skips blank lines', () => {
   assert.strictEqual(parseCorpus(jsonl).length, 1);
 });
 
+test('parseCorpus: skips malformed line and returns valid entries', () => {
+  const validA = JSON.stringify(BASE_RULE);
+  const validB = JSON.stringify({ ...BASE_RULE, rule_title: 'B' });
+  const malformed = '{"broken json: missing closing brace';
+  const jsonl = [validA, malformed, validB].join('\n');
+  const result = parseCorpus(jsonl);
+  assert.strictEqual(result.length, 2, 'should return only the 2 valid entries');
+  assert.strictEqual(result[0].rule_title, BASE_RULE.rule_title);
+  assert.strictEqual(result[1].rule_title, 'B');
+});
+
 // ---------------------------------------------------------------------------
 // buildSystemPrompt
 // ---------------------------------------------------------------------------

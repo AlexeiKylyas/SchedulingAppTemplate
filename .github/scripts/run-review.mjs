@@ -25,10 +25,18 @@ function exec(command, args) {
 // ---------------------------------------------------------------------------
 
 export function parseCorpus(content) {
-  return content
-    .split('\n')
-    .filter(line => line.trim())
-    .map(line => JSON.parse(line));
+  const results = [];
+  for (const [index, line] of content.split('\n').entries()) {
+    if (!line.trim()) continue;
+    try {
+      results.push(JSON.parse(line));
+    } catch (error) {
+      process.stderr.write(
+        `[parseCorpus] WARNING: skipping malformed JSONL at line ${index + 1}: ${error.message}\n`,
+      );
+    }
+  }
+  return results;
 }
 
 export function buildSystemPrompt({ repoBanner, alwaysOnRules, priorReviews }) {

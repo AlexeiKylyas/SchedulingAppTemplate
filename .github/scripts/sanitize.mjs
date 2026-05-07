@@ -11,6 +11,8 @@ export const dangerousPatterns = [
   [/\[INST\]/i, 'prompt-injection:inst'],
   [/<\/s>/i, 'prompt-injection:end-s'],
   [/<\/system>/i, 'prompt-injection:end-system'],
+  [/\n\nHuman:/i, 'prompt-injection:human-turn'],
+  [/\n\nAssistant:/i, 'prompt-injection:assistant-turn'],
 ];
 
 function dangerLabel(value) {
