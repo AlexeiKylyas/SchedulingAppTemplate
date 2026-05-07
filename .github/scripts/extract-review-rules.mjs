@@ -158,12 +158,14 @@ export async function extractRules({ anthropic, prompt, model, signal }) {
     { signal },
   );
 
-  const text = response.content.find(c => c.type === 'text')?.text ?? '';
+  const raw = response.content.find(c => c.type === 'text')?.text ?? '';
+  // Strip markdown code fences the model sometimes wraps around the JSON response
+  const text = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
   let parsed;
   try {
     parsed = JSON.parse(text);
   } catch {
-    throw new Error(`Anthropic response is not valid JSON: ${text.slice(0, 200)}`);
+    throw new Error(`Anthropic response is not valid JSON: ${raw.slice(0, 200)}`);
   }
 
   if (!Array.isArray(parsed.rules)) {
