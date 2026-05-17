@@ -77,9 +77,9 @@ Rules: same regex set as `sanitize.mjs`, plus:
 - Secret-leak regex: PEM block headers, `AKIA`-prefixed strings (AWS key shape), JWT-shaped tokens (`eyJ...`), long hex tokens (≥ 32 hex chars)
 - Deduplication: skip entries whose `rule_title` fuzzy-matches an existing entry above a similarity threshold
 
-### 3.3 `[skip ci]` + actor guard (Phase 2 sub-epic 2.1)
+### 3.3 `[skip ci]` + PR-author guard (Phase 5 sub-epic 5.2)
 
-The extraction workflow skips runs triggered by the bot's own commits (via `[skip ci]` in the commit message and an actor check against the bot's GitHub login). Prevents the extraction loop from re-processing its own output.
+The extraction workflow skips runs when the PR was opened by `github-actions[bot]` (checked via `pull_request.user.login`). This correctly handles the Phase 5 flow where a human clicks merge on the bot's corpus-PR — `actor` would be the human, but `user.login` is still `github-actions[bot]`, so extraction is skipped. `[skip ci]` in the corpus commit message provides defence-in-depth for any future push-triggered workflows.
 
 ### 3.4 Append-only JSONL with git history
 
@@ -101,6 +101,14 @@ After Layer 2 (substring dedup) passes, `sanitize-and-dedup.mjs` calls `semantic
 **Fail-open by design:** any error (network, timeout, parse failure, model refusal, AbortError) produces `{ is_duplicate: false }` — the rule is let through with a stderr warning. Rationale: a duplicate in the corpus is git-revertable and visible in history; a silently-lost unique rule is invisible and unrecoverable. The fail-open policy means Layer 3 can never suppress a legitimate rule, only flag obvious paraphrases.
 
 **When Layer 3 is active:** whenever `ANTHROPIC_API_KEY` is present in the environment. When the key is absent, the step logs a warning and skips Layer 3 — Layers 1 and 2 still apply.
+
+### 3.7 Human PR review gate (Phase 5)
+
+**Not a security mitigation in the strict sense** — a sufficiently patient attacker who writes convincing-looking rules can still slip through. This is a **governance and oversight** control: every extracted entry is presented to a human reviewer as a PR diff before it lands in the corpus.
+
+When `extract-review-rules.yml` produces surviving rules, the bot opens a corpus-update PR (branch `corpus/from-pr-N`, labelled `corpus-update`) rather than pushing directly to `main`. The rule lands on `main` only after a human clicks "Merge". Closing the PR discards the extraction silently.
+
+**Relation to other vectors:** Defence-in-depth on top of the sanitize-and-dedup gate (Vectors C and D). Even if a hostile rule bypasses Layers 1–3, the human reviewer is the final backstop before it enters the always-on prompt injection path (Vector A).
 
 ---
 
@@ -126,6 +134,7 @@ Run quarterly, or after any change to the corpus pipeline or `corpus.jsonl`.
 - [ ] `jq 'select(.priority == "always")' .github/claude-review-corpus.jsonl | wc -l` — verify the always-on count equals the initial 7 plus any manually approved promotions; zero rogue auto-promotions.
 - [ ] Review the git log for `corpus.jsonl`: every commit should have the bot as author (for extracted entries) or a named human (for manual seeds). No anonymous or unexpected authors.
 - [ ] Confirm `sanitize.mjs` and `sanitize-and-dedup.mjs` regex sets are in sync — divergence is a coverage gap.
+- [ ] Review open `corpus-update` labelled PRs (`gh pr list --label corpus-update`). Close any stale ones older than 14 days that should not be merged.
 
 ---
 
@@ -134,7 +143,7 @@ Run quarterly, or after any change to the corpus pipeline or `corpus.jsonl`.
 | Component | Sub-epic | Role |
 |---|---|---|
 | `sanitize.mjs` | Phase 2 sub-epic 2.2 | Sanitizes corpus entries before injection into system prompt (Vector A) and tool results (Vector B) |
-| `run-review.mjs` | Phase 2 sub-epic 2.1 | Orchestrates review; calls `sanitizeForPrompt()` for both Vectors A and B; implements `[skip ci]` + actor guard |
+| `run-review.mjs` | Phase 2 sub-epic 2.1 | Orchestrates review; calls `sanitizeForPrompt()` for both Vectors A and B |
 | `sanitize-and-dedup.mjs` | Phase 3 sub-epic 3.3 | Sanitizes and deduplicates extraction candidates before append to `corpus.jsonl`; applies secret-leak regex |
 | `extract-review-rules.mjs` | Phase 3 sub-epic 3.2 | Reads merged-PR reviewer comments and produces candidate rules for sanitization |
 | `semantic-dedup.mjs` | Remediation 1 R1 | Layer 3 semantic dedup — calls Sonnet 4.6 to detect paraphrased corpus duplicates; fail-open |

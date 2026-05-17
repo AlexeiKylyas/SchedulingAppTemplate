@@ -43,9 +43,13 @@ extract-review-rules.yml fires
    │
    ├─ 0 rules → no commit (empty-output gate)
    │
-   └─ ≥1 rules → append to claude-review-corpus.jsonl
-                  git commit "chore(corpus): rules from PR #N [skip ci]"
-                  git push (with rebase retry)
+   └─ ≥1 rules → bot creates branch corpus/from-pr-N
+                  appends to claude-review-corpus.jsonl + commits
+                  opens PR labelled corpus-update
+                     │
+                  user reviews + merges bot's PR
+                     │
+                  corpus.jsonl on main updated
 ```
 
 ---
@@ -86,7 +90,10 @@ jq 'select(.tags[] | contains("graphql"))' .github/claude-review-corpus.jsonl
 Check the Actions tab → `Claude Code Review` run. The run log shows which corpus rules were loaded and what Claude returned. If the run succeeded but output was empty, the diff may have been too small for Claude to flag anything — this is normal.
 
 **Extraction workflow skipped after a merge**
-The job `if:` condition requires `merged == true && actor != 'github-actions[bot]'`. If a human-initiated merge somehow fails the actor check, inspect the triggering event in the run log. Most likely the workflow was correctly skipped because the merge was a bot corpus commit.
+The job `if:` condition requires `merged == true && pull_request.user.login != 'github-actions[bot]'`. Skips are expected when the merged PR was opened by the bot (a corpus-update PR). If a human-initiated feature PR is unexpectedly skipped, inspect the triggering event in the run log.
+
+**Bot's corpus-PR never gets merged**
+If the bot opens a corpus-update PR and you close it without merging, the extracted rules are discarded silently. The branch (`corpus/from-pr-N`) can be safely deleted. This is the intended way to reject a hallucinated or low-quality extraction.
 
 **A hallucinated or wrong rule was appended to the corpus**
 ```bash

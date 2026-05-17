@@ -5,9 +5,11 @@ All items must be checked before sign-off.
 
 Verified: 2026-05-07
 
+> **Phase 5 note (2026-05-17):** The corpus-update flow has been upgraded from direct push to a bot PR model. Pre-Phase-5 extractions (PRs #11, #12, #13) were direct pushes and count toward criterion §1 historically. Future extractions will appear as `corpus-update`-labelled PRs requiring human merge.
+
 ---
 
-## 1. Stability — ≥3 successful real extractions
+## 1. Stability — ≥3 successful real extraction PRs merged
 
 ```bash
 git log --oneline --grep="chore(corpus)" .github/claude-review-corpus.jsonl

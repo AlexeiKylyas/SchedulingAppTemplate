@@ -1,5 +1,7 @@
 # E2E Extraction Validation — Phase 3 (corpus-pilot)
 
+> **Historical note (Phase 5, 2026-05-17):** This validation used the direct-push corpus flow (Phase 3). As of Phase 5, the bot opens a corpus-update PR for human review instead of pushing directly to main. The extraction mechanics described here are unchanged; only the output delivery changed.
+
 **Date:** 2026-05-07  
 **Validator:** Coder (corpus-pilot Phase 3 Task 5)  
 **Workflow:** `.github/workflows/extract-review-rules.yml`

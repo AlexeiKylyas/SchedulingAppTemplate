@@ -24,9 +24,10 @@ See [`docs/ai-review-corpus.md`](../docs/ai-review-corpus.md) for the plain-lang
 ## 2. Setup checklist
 
 - [ ] **Repo secret** — add `ANTHROPIC_API_KEY` in Settings → Secrets → Actions
-- [ ] **Workflow permissions** — Settings → Actions → General → Workflow permissions → "Read and write permissions"
+- [ ] **Workflow permissions** — Settings → Actions → General → Workflow permissions → "Read and write permissions" (grants `contents: write` + `pull-requests: write` — both required by the extraction workflow)
 - [ ] **Verify deps locally** — `cd .github/scripts && npm ci` (should complete without errors)
 - [ ] **Layer 3 semantic dedup** — always-on when `ANTHROPIC_API_KEY` is set; gracefully skipped (with a stderr warning) when absent. No action required — the extraction workflow passes the key automatically.
+- [ ] **Pre-create label** `corpus-update`: `gh label create corpus-update -R <owner>/<repo>` (one-off). Workflow will idempotently re-create on each run if missing, but doing it up-front avoids first-run failure noise.
 
 ---
 
@@ -73,10 +74,14 @@ jq -c . .github/claude-review-corpus.jsonl | wc -l
 
 ---
 
-## 5. Monitoring
+## 5. How the corpus grows
+
+When a real PR merges, `extract-review-rules.yml` runs. Surviving rules go into a **separate PR** opened by `github-actions[bot]` against `main`, titled `chore(corpus): N rules from PR #X` and labelled `corpus-update`. Review the diff; if the rule(s) look reasonable, merge the bot's PR. Otherwise close it — the corpus stays untouched.
+
+**Monitoring:**
 
 ```bash
-# Recent corpus-growth commits
+# Recent corpus-growth commits (after bot PR merges)
 git log --oneline .github/claude-review-corpus.jsonl
 
 # Current rule count
@@ -85,6 +90,9 @@ jq -c . .github/claude-review-corpus.jsonl | wc -l
 # GHA workflow runs
 gh run list --workflow=claude-review.yml --limit 5
 gh run list --workflow=extract-review-rules.yml --limit 5
+
+# Open corpus-update PRs awaiting review
+gh pr list --label corpus-update
 ```
 
 Check Anthropic console for API usage and cost. At pilot scale (≤20 PRs/week) cost should be well under $1/week.
@@ -93,12 +101,13 @@ Check Anthropic console for API usage and cost. At pilot scale (≤20 PRs/week) 
 
 ## 6. Re-trigger guards
 
-Two guards prevent the extraction workflow from re-firing on its own corpus commits:
+Three guards prevent the extraction and review workflows from cascading on their own outputs:
 
-- `[skip ci]` in the commit message — prevents push-triggered CI
-- `actor != 'github-actions[bot]'` in the job `if:` — prevents pull_request-triggered CI
+- **`paths-ignore` in `claude-review.yml`** — corpus-update PRs (which touch only `.github/claude-review-corpus.jsonl`) skip the reviewer workflow. Claude has nothing useful to say about its own extracted rules.
+- **`[skip ci]` in the corpus commit message** — prevents push-triggered workflows (defence-in-depth; no push-triggered workflow currently fires on corpus commits).
+- **`pull_request.user.login != 'github-actions[bot]'` in `extract-review-rules.yml`** — prevents extraction re-firing when a human merges the bot's corpus-PR. Checks WHO OPENED the PR (not who clicked merge): when you merge a corpus-PR, `user.login = github-actions[bot]` → extraction is skipped correctly.
 
-Both are required; they cover different event types. Do not remove either.
+All three cover different event paths. Do not remove any.
 
 ---
 
