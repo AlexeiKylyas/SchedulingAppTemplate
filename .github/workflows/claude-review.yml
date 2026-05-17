@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [main]
+    paths-ignore:
+      # Bot-opened corpus-update PRs (Phase 5) touch only this file. Skip reviewer
+      # workflow on those — claude-review has nothing useful to say about its own
+      # extracted rules.
+      - '.github/claude-review-corpus.jsonl'
 
 env:
   REPO_BANNER: 'SchedulingAppTemplate — a NestJS REST API + Vue 3 SPA test polygon'

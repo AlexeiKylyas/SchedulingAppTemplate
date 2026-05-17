@@ -20,13 +20,14 @@ jobs:
     # 1. `merged == true`: only run on actual merges, not on PR closes without merge.
     #    Without this the job would fire on every closed PR (e.g. "Close without merging").
     #
-    # 2. `actor != 'github-actions[bot]'`: prevents this workflow from re-firing when the
-    #    bot itself pushes the corpus-update commit (which may trigger a pull_request:closed
-    #    event on short-lived branches). Note: the commit step (sub-epic 3.4) also adds
-    #    [skip ci] to the commit message, which guards push-triggered workflows — but that
-    #    guard does not cover pull_request events, so this actor check fills that gap.
+    # 2. `pull_request.user.login != 'github-actions[bot]'`: prevents this workflow from
+    #    re-firing when a human merges the bot's corpus-update PR (Phase 5). We check WHO
+    #    OPENED the PR (user.login), not who clicked merge (actor) — when you click merge
+    #    on a corpus-PR, actor=you but user.login=github-actions[bot], so extraction is
+    #    correctly skipped. The [skip ci] on the corpus commit guards push-triggered
+    #    workflows; this guard covers the pull_request:closed event path.
     #    Both guards protect different scenarios; do not remove either thinking it is redundant.
-    if: github.event.pull_request.merged == true && github.actor != 'github-actions[bot]'
+    if: github.event.pull_request.merged == true && github.event.pull_request.user.login != 'github-actions[bot]'
     permissions:
       contents: write       # required to push corpus branch and commit
       pull-requests: write  # required to fetch PR comments/reviews and to open corpus-update PR
