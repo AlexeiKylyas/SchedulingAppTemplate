@@ -8,6 +8,7 @@ on:
 env:
   CORPUS_PATH: '.github/claude-review-corpus.jsonl'
   EXTRACTION_MODEL: 'claude-sonnet-4-6'
+  SEMANTIC_DEDUP_MODEL: 'claude-sonnet-4-6'
   REPO_NAME: 'SchedulingAppTemplate'
 
 jobs:
@@ -48,6 +49,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           CORPUS_PATH: ${{ env.CORPUS_PATH }}
           EXTRACTOR_MODEL: ${{ env.EXTRACTION_MODEL }}
+          SEMANTIC_DEDUP_MODEL: ${{ env.SEMANTIC_DEDUP_MODEL }}
         run: |
           node extract-review-rules.mjs --pr ${{ github.event.pull_request.number }} \
             | node sanitize-and-dedup.mjs --corpus ../claude-review-corpus.jsonl \

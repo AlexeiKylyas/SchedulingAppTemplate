@@ -16,7 +16,8 @@ See [`docs/ai-review-corpus.md`](../docs/ai-review-corpus.md) for the plain-lang
 | `scripts/run-review.mjs` | Agentic reviewer: loads corpus, calls Claude, returns markdown review |
 | `scripts/extract-review-rules.mjs` | Calls Claude to extract rules from a merged PR diff + review comments |
 | `scripts/sanitize.mjs` | Prompt-injection + control-character guard for corpus rule fields |
-| `scripts/sanitize-and-dedup.mjs` | Secret-leak guard + deduplication by `rule_title` (stdin→stdout JSONL) |
+| `scripts/sanitize-and-dedup.mjs` | 3-layer gate: secret-leak regex → prompt-injection → substring dedup → LLM semantic dedup (stdin→stdout JSONL) |
+| `scripts/semantic-dedup.mjs` | Layer 3: calls Sonnet 4.6 to detect paraphrased corpus duplicates; fail-open on any API error |
 
 ---
 
@@ -25,6 +26,7 @@ See [`docs/ai-review-corpus.md`](../docs/ai-review-corpus.md) for the plain-lang
 - [ ] **Repo secret** — add `ANTHROPIC_API_KEY` in Settings → Secrets → Actions
 - [ ] **Workflow permissions** — Settings → Actions → General → Workflow permissions → "Read and write permissions"
 - [ ] **Verify deps locally** — `cd .github/scripts && npm ci` (should complete without errors)
+- [ ] **Layer 3 semantic dedup** — always-on when `ANTHROPIC_API_KEY` is set; gracefully skipped (with a stderr warning) when absent. No action required — the extraction workflow passes the key automatically.
 
 ---
 
@@ -44,6 +46,7 @@ CORPUS_TOP_N: '8'
 ```yaml
 CORPUS_PATH: '.github/claude-review-corpus.jsonl'
 EXTRACTION_MODEL: 'claude-sonnet-4-6'
+SEMANTIC_DEDUP_MODEL: 'claude-sonnet-4-6'
 REPO_NAME: '<repo name>'
 ```
 

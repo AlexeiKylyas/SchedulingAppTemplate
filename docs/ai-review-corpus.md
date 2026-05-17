@@ -35,7 +35,11 @@ PR merges to main
 extract-review-rules.yml fires
    │  fetches diff + inline review comments
    │  Claude proposes 0–3 reusable rules (JSON)
-   │  sanitize-and-dedup filters secrets, injection patterns, duplicates
+   │  sanitize-and-dedup applies 3-layer gate:
+   │    Layer 1a — secret-leak regex (PEM, AWS key, JWT, hex token) → hard reject
+   │    Layer 1b — prompt-injection markers → hard reject
+   │    Layer 2  — normalized title substring dedup → skip
+   │    Layer 3  — LLM semantic dedup (Sonnet 4.6, fail-open) → skip if paraphrase
    │
    ├─ 0 rules → no commit (empty-output gate)
    │

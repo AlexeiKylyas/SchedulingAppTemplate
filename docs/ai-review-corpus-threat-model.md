@@ -92,6 +92,16 @@ The extraction workflow skips runs triggered by the bot's own commits (via `[ski
 
 Phase 3 extraction defaults all new entries to `priority: "context"`. Promotion to `"always"` (eager injection into every system prompt) requires a manual human decision. A successfully injected extraction cannot reach Vector A without a human approving the promotion.
 
+### 3.6 `semantic-dedup.mjs` — Layer 3 quality mitigation (Remediation 1)
+
+**Not a security mitigation** — paraphrased duplicates do not expand the attack surface. This is a **corpus freshness and quality** control: as the corpus grows, paraphrased duplicates dilute `search_corpus` results and reduce review signal.
+
+After Layer 2 (substring dedup) passes, `sanitize-and-dedup.mjs` calls `semantic-dedup.mjs`, which asks Claude Sonnet 4.6 whether the candidate rule is semantically equivalent to any existing title.
+
+**Fail-open by design:** any error (network, timeout, parse failure, model refusal, AbortError) produces `{ is_duplicate: false }` — the rule is let through with a stderr warning. Rationale: a duplicate in the corpus is git-revertable and visible in history; a silently-lost unique rule is invisible and unrecoverable. The fail-open policy means Layer 3 can never suppress a legitimate rule, only flag obvious paraphrases.
+
+**When Layer 3 is active:** whenever `ANTHROPIC_API_KEY` is present in the environment. When the key is absent, the step logs a warning and skips Layer 3 — Layers 1 and 2 still apply.
+
 ---
 
 ## 4. Residual Risks
@@ -127,4 +137,5 @@ Run quarterly, or after any change to the corpus pipeline or `corpus.jsonl`.
 | `run-review.mjs` | Phase 2 sub-epic 2.1 | Orchestrates review; calls `sanitizeForPrompt()` for both Vectors A and B; implements `[skip ci]` + actor guard |
 | `sanitize-and-dedup.mjs` | Phase 3 sub-epic 3.3 | Sanitizes and deduplicates extraction candidates before append to `corpus.jsonl`; applies secret-leak regex |
 | `extract-review-rules.mjs` | Phase 3 sub-epic 3.2 | Reads merged-PR reviewer comments and produces candidate rules for sanitization |
+| `semantic-dedup.mjs` | Remediation 1 R1 | Layer 3 semantic dedup — calls Sonnet 4.6 to detect paraphrased corpus duplicates; fail-open |
 | `.github/claude-review-corpus.jsonl` | Phase 1 Task 3 | Append-only corpus; git history is the audit trail |
