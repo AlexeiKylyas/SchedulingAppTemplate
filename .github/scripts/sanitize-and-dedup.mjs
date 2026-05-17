@@ -1,7 +1,9 @@
-import { readFileSync, createReadStream } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import Anthropic from '@anthropic-ai/sdk';
 import { sanitizeForPrompt, dangerousPatterns } from './sanitize.mjs';
+import { checkSemanticDuplicate } from './semantic-dedup.mjs';
 
 // ---------------------------------------------------------------------------
 // Secret-leak patterns (SubBSM B1 extension)
@@ -64,7 +66,7 @@ export function loadExistingTitles(corpusPath) {
   }
 }
 
-export function applyGate({ rule, existingTitles }) {
+export async function applyGate({ rule, existingTitles, anthropic, model, signal }) {
   // Layer 1a — secret-leak check (hard reject, no redaction)
   for (const field of STRING_FIELDS) {
     if (typeof rule[field] !== 'string') continue;
@@ -91,10 +93,29 @@ export function applyGate({ rule, existingTitles }) {
     return null;
   }
 
+  // Layer 3 — LLM semantic dedup (fail-open: any error lets the rule through)
+  if (anthropic != null) {
+    const semanticResult = await checkSemanticDuplicate({
+      candidate: sanitized,
+      existingTitles: Array.from(existingTitles),
+      anthropic,
+      model,
+      signal,
+    });
+    if (semanticResult.is_duplicate) {
+      process.stderr.write(
+        `[sanitize-and-dedup] info: semantic duplicate of "${semanticResult.duplicate_of}" reason="${semanticResult.reason}" — skipped\n`,
+      );
+      return null;
+    }
+  }
+
   return sanitized;
 }
 
-export async function runGate({ inputLines, existingTitles }) {
+const SEMANTIC_TIMEOUT_MS = 30_000;
+
+export async function runGate({ inputLines, existingTitles, anthropic, model, signal }) {
   const survivors = [];
   for (const line of inputLines) {
     if (!line.trim()) continue;
@@ -105,8 +126,18 @@ export async function runGate({ inputLines, existingTitles }) {
       process.stderr.write(`[sanitize-and-dedup] WARNING: skipping malformed input line: ${line.slice(0, 80)}\n`);
       continue;
     }
-    const result = applyGate({ rule, existingTitles });
-    if (result !== null) survivors.push(result);
+    // Per-call abort: 30s timeout guards each individual semantic-dedup API call
+    const controller = new AbortController();
+    const timeoutID = setTimeout(
+      () => controller.abort(new Error(`${SEMANTIC_TIMEOUT_MS / 1000}s semantic-dedup timeout`)),
+      SEMANTIC_TIMEOUT_MS,
+    );
+    try {
+      const result = await applyGate({ rule, existingTitles, anthropic, model, signal: controller.signal });
+      if (result !== null) survivors.push(result);
+    } finally {
+      clearTimeout(timeoutID);
+    }
   }
   return survivors;
 }
@@ -122,6 +153,21 @@ async function main() {
     ? args[corpusIndex + 1]
     : process.env.CORPUS_PATH ?? '.github/claude-review-corpus.jsonl';
 
+  const noSemantic = args.includes('--no-semantic-dedup');
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const semanticModel = process.env.SEMANTIC_DEDUP_MODEL ?? 'claude-sonnet-4-6';
+
+  let anthropic = null;
+  if (noSemantic) {
+    process.stderr.write('[sanitize-and-dedup] info: --no-semantic-dedup flag set — Layer 3 skipped\n');
+  } else if (apiKey) {
+    anthropic = new Anthropic({ apiKey });
+  } else {
+    process.stderr.write(
+      '[sanitize-and-dedup] WARNING: ANTHROPIC_API_KEY missing — semantic dedup (Layer 3) skipped\n',
+    );
+  }
+
   process.stderr.write(`[sanitize-and-dedup] corpus=${corpusPath}\n`);
 
   const existingTitles = loadExistingTitles(corpusPath);
@@ -131,7 +177,7 @@ async function main() {
   const rl = createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const line of rl) lines.push(line);
 
-  const survivors = await runGate({ inputLines: lines, existingTitles });
+  const survivors = await runGate({ inputLines: lines, existingTitles, anthropic, model: semanticModel });
 
   process.stderr.write(`[sanitize-and-dedup] ${survivors.length} rule(s) passed gate\n`);
   for (const rule of survivors) {
