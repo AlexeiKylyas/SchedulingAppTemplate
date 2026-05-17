@@ -93,7 +93,9 @@ jq -r 'select(.reviewer != "manual-seed") | "\(.rule_title) | tags: \(.tags | jo
 
 All entries are architecture/validation patterns — no secrets, no injection vectors, no PII. The threat model's sanitization pipeline (Vectors A–D) was exercised on every entry. ✅
 
-- [x] **PASS** (automated sanitization verified; human should re-read threat model for any new extraction-derived patterns)
+**Threat model re-review completed 2026-05-17:** During re-review, a paraphrased duplicate was identified (Entry 3 from PR #13 ≈ Entry 1 from PR #11). Finding remediated via Code Review Remediation 1 (Layer 3 semantic dedup, commits `3d89252`–`8869d43`). Entry 3 removed from corpus (now 10 entries). Layer 3 operational and E2E validated — see `pilot/SEMANTIC-DEDUP-VALIDATION-result.md`.
+
+- [x] **PASS** (automated sanitization verified; threat model updated with §3.6 Layer 3 quality mitigation)
 
 ---
 
