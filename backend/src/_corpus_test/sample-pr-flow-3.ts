@@ -1,17 +1,13 @@
-import { Resolver, Query, Args } from '@nestjs/graphql';
-import { GetAvailabilityUsecase } from './get-availability.usecase';
+import { Resolver, Query } from '@nestjs/graphql';
+import { ExternalCalendarService } from './external-calendar.service';
 
 @Resolver()
-export class AvailabilityResolver {
-  constructor(private readonly getAvailability: GetAvailabilityUsecase) {}
+export class CalendarSyncResolver {
+  constructor(private readonly calendarService: ExternalCalendarService) {}
 
   @Query(() => String)
-  async getAvailability(
-    @Args('providerID') providerID: string,
-    @Args('startDate') startDate: string,
-    @Args('endDate') endDate: string,
-    @Args('slotDuration') slotDuration: number,
-  ): Promise<string> {
-    return this.getAvailability.execute({ providerID, startDate, endDate, slotDuration });
+  async syncCalendar(): Promise<string> {
+    const apiKey = process.env.CALENDAR_API_KEY;
+    return this.calendarService.sync({ apiKey });
   }
 }
